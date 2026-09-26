@@ -40,8 +40,8 @@
         "other_text_upright": false,
         "pads": {
           "drill": 0.0,
-          "height": 0.23,
-          "width": 0.7
+          "height": 1.0,
+          "width": 2.0
         },
         "silk_line_width": 0.12,
         "silk_text_italic": false,
@@ -79,7 +79,27 @@
       ],
       "drc_exclusions": [
         [
-          "starved_thermal|90800000|101250000|bbeaade1-6d8e-4189-9330-2c70518040ab|3fb588ab-e3d4-4abe-8e9a-78f947054348|F.Cu",
+          "hole_clearance|103750000|76755000|76623171-9c3f-4cb8-9487-e90f80e2aab2|8d994dba-3dd4-4b15-b00a-b1fea62c3315",
+          ""
+        ],
+        [
+          "hole_clearance|103750000|76755000|f1ee9afa-2366-4425-985d-03186d5eefab|8d994dba-3dd4-4b15-b00a-b1fea62c3315",
+          ""
+        ],
+        [
+          "hole_clearance|109850000|76755000|01e24d52-368f-42e3-ba10-99c6e060c0b0|f6378b4e-8bd5-4df6-9d4c-a7b6e5874e8e",
+          ""
+        ],
+        [
+          "hole_clearance|109850000|76755000|eef0af8f-1b23-4554-9fe8-5e70d0d2b27d|f6378b4e-8bd5-4df6-9d4c-a7b6e5874e8e",
+          ""
+        ],
+        [
+          "malformed_courtyard|109554000|110399800|7d80e106-c2e2-4fea-a5be-472f800ab568|00000000-0000-0000-0000-000000000000",
+          ""
+        ],
+        [
+          "malformed_courtyard|109554000|113600200|7d80e106-c2e2-4fea-a5be-472f800ab568|00000000-0000-0000-0000-000000000000",
           ""
         ]
       ],
@@ -587,7 +607,7 @@
       "plot": "gerbers",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "RPI-RP2350A-MINIMAL_R4-S1.step",
       "svg": "",
       "vrml": ""
     },
