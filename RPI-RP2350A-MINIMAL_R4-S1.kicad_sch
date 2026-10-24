@@ -11294,7 +11294,7 @@
 	)
 	(wire
 		(pts
-			(xy 280.67 149.86) (xy 280.67 153.67)
+			(xy 281.94 148.59) (xy 281.94 152.4)
 		)
 		(stroke
 			(width 0)
@@ -12104,7 +12104,7 @@
 	)
 	(wire
 		(pts
-			(xy 280.67 158.75) (xy 280.67 161.29)
+			(xy 281.94 157.48) (xy 281.94 160.02)
 		)
 		(stroke
 			(width 0)
@@ -18187,7 +18187,7 @@
 	)
 	(symbol
 		(lib_id "RPI - Power:PWR_NET")
-		(at 280.67 149.86 0)
+		(at 281.94 148.59 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -18197,7 +18197,7 @@
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-00005f1af967")
 		(property "Reference" "#PWR27"
-			(at 280.67 153.67 0)
+			(at 281.94 152.4 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18208,7 +18208,7 @@
 			)
 		)
 		(property "Value" "+3V3"
-			(at 280.67 146.05 0)
+			(at 281.94 144.78 0)
 			(show_name no)
 			(do_not_autoplace yes)
 			(effects
@@ -18218,7 +18218,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 280.67 149.86 0)
+			(at 281.94 148.59 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18229,7 +18229,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 280.67 149.86 0)
+			(at 281.94 148.59 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18240,7 +18240,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 280.67 149.86 0)
+			(at 281.94 148.59 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18264,7 +18264,7 @@
 	)
 	(symbol
 		(lib_id "RPI_DB:Capacitors | MLCC | M2012/RP-01GYSK-AVBE41")
-		(at 280.67 156.21 0)
+		(at 281.94 154.94 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -18274,7 +18274,7 @@
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-00005f1af96d")
 		(property "Reference" "C19"
-			(at 282.702 151.13 0)
+			(at 283.972 149.86 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18285,7 +18285,7 @@
 			)
 		)
 		(property "Value" "10u"
-			(at 282.702 153.162 0)
+			(at 283.972 151.892 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18296,7 +18296,7 @@
 			)
 		)
 		(property "Footprint" "RPI_COMPILED:generic_capc2012x125"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18307,7 +18307,7 @@
 			)
 		)
 		(property "Datasheet" "file:///C:\\rpi-pdb\\parts\\Capacitors\\MLCC\\M2012\\MURATA_GRM21BR61C106KE15L\\datasheets"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18318,7 +18318,7 @@
 			)
 		)
 		(property "Description" "Capacitor, MLCC, 10uF, 10%, M2012, 16V, X5R"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18329,7 +18329,7 @@
 			)
 		)
 		(property "package" "M2012"
-			(at 282.702 161.29 0)
+			(at 283.972 160.02 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18340,7 +18340,7 @@
 			)
 		)
 		(property "voltage" "16V"
-			(at 282.702 157.226 0)
+			(at 283.972 155.956 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18351,7 +18351,7 @@
 			)
 		)
 		(property "dielectric" "X5R"
-			(at 282.702 159.258 0)
+			(at 283.972 157.988 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18362,7 +18362,7 @@
 			)
 		)
 		(property "tolerance" "10%"
-			(at 282.702 155.194 0)
+			(at 283.972 153.924 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -18373,7 +18373,7 @@
 			)
 		)
 		(property "part_uid" "RP-01GYSK-AVBE41"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18384,7 +18384,7 @@
 			)
 		)
 		(property "manufacturer" "Murata"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18395,7 +18395,7 @@
 			)
 		)
 		(property "manufacturer_pn" "GRM21BR61C106KE15L"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18406,7 +18406,7 @@
 			)
 		)
 		(property "packaging" "180mm embossed taping"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18417,7 +18417,7 @@
 			)
 		)
 		(property "packaging_qty" "3000"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18428,7 +18428,7 @@
 			)
 		)
 		(property "temp_coefficient" "X5R"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18439,7 +18439,7 @@
 			)
 		)
 		(property "operating_temp_max" "+85C"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18450,7 +18450,7 @@
 			)
 		)
 		(property "operating_temp_min" "-55C"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18461,7 +18461,7 @@
 			)
 		)
 		(property "z_height_max" ""
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18472,7 +18472,7 @@
 			)
 		)
 		(property "material" "Ceramic"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18483,7 +18483,7 @@
 			)
 		)
 		(property "size" "2.0x1.25x1.25mm"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18494,7 +18494,7 @@
 			)
 		)
 		(property "capacitance" "10u"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18505,7 +18505,7 @@
 			)
 		)
 		(property "z_height_nom" "1.25mm"
-			(at 280.67 156.21 0)
+			(at 281.94 154.94 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18516,7 +18516,7 @@
 			)
 		)
 		(property "LCSC" "C1035"
-			(at 282.702 151.13 0)
+			(at 283.972 149.86 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18543,7 +18543,7 @@
 	)
 	(symbol
 		(lib_id "RPI - Power:GND")
-		(at 280.67 161.29 0)
+		(at 281.94 160.02 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -18553,7 +18553,7 @@
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-00005f1af973")
 		(property "Reference" "#PWR28"
-			(at 280.67 167.64 0)
+			(at 281.94 166.37 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18564,7 +18564,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 280.67 165.227 0)
+			(at 281.94 163.957 0)
 			(show_name no)
 			(do_not_autoplace yes)
 			(effects
@@ -18574,7 +18574,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 280.67 161.29 0)
+			(at 281.94 160.02 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18585,7 +18585,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 280.67 161.29 0)
+			(at 281.94 160.02 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -18596,7 +18596,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 280.67 161.29 0)
+			(at 281.94 160.02 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
