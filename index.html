@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VoidVoyagers // Lap Timer</title>
+  
+  <style>
+    /* 100% Offline Embedded CSS (Prevents Pico AP captive portal hangs) */
+    :root {
+      --pit-950: #06080c;
+      --pit-900: #0c1017;
+      --pit-850: #121824;
+      --pit-800: #1a2333;
+      --pit-700: #2b3952;
+      --pit-600: #43577d;
+      
+      --racing-purple: #b026ff;
+      --racing-green: #10b981;
+      --racing-amber: #f59e0b;
+      --racing-red: #ef4444;
+      --racing-cyan: #06b6d4;
+
+      --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Impact, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      overscroll-behavior-y: contain;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      background-color: var(--pit-950);
+      color: #f1f5f9;
+      font-family: var(--font-sans);
+      min-height: 100vh;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      max-width: 32rem;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0.75rem;
+    }
+
+    .lcd-display {
+      font-family: var(--font-mono);
+      font-feature-settings: "tnum" 1, "zero" 1;
+      letter-spacing: -0.04em;
+    }
+
+    .gauge-bevel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.55) 100%), var(--pit-900);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .tactile-btn {
+      transition: transform 0.05s ease, background 0.15s ease, border-color 0.15s ease;
+      cursor: pointer;
+    }
+    .tactile-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* Layout Utilities */
+    .w-full { width: 100%; }
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .flex-1 { flex: 1 1 0%; }
+    .flex-shrink-0 { flex-shrink: 0; }
+    .items-center { align-items: center; }
+    .items-baseline { align-items: baseline; }
+    .justify-between { justify-content: space-between; }
+    .justify-center { justify-content: center; }
+    .grid { display: grid; }
+    .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .hidden { display: none !important; }
+    .fixed { position: fixed; }
+    .relative { position: relative; }
+    .inset-0 { inset: 0; }
+    .overflow-hidden { overflow: hidden; }
+    .overflow-y-auto { overflow-y: auto; }
+    .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+    .uppercase { text-transform: uppercase; }
+    .italic { font-style: italic; }
+
+    /* Spacing */
+    .gap-1 { gap: 0.25rem; }
+    .gap-1\.5 { gap: 0.375rem; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-2\.5 { gap: 0.625rem; }
+    .gap-3 { gap: 0.75rem; }
+    
+    .p-1\.5 { padding: 0.375rem; }
+    .p-2 { padding: 0.5rem; }
+    .p-2\.5 { padding: 0.625rem; }
+    .p-3 { padding: 0.75rem; }
+    .p-4 { padding: 1rem; }
+    .p-5 { padding: 1.25rem; }
+    
+    .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+    .px-2\.5 { padding-left: 0.625rem; padding-right: 0.625rem; }
+    .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .px-3\.5 { padding-left: 0.875rem; padding-right: 0.875rem; }
+    .px-4 { padding-left: 1rem; padding-right: 1rem; }
+    
+    .py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+    .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+    .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+    .py-2\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+    .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+    .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+    .py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+    .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+    
+    .pt-2 { padding-top: 0.5rem; }
+    .pt-3 { padding-top: 0.75rem; }
+    .pb-2 { padding-bottom: 0.5rem; }
+    .mb-1 { margin-bottom: 0.25rem; }
+    .mb-2 { margin-bottom: 0.5rem; }
+    .my-2 { margin-top: 0.5rem; margin-bottom: 0.5rem; }
+    .mt-0\.5 { margin-top: 0.125rem; }
+    .mt-2 { margin-top: 0.5rem; }
+    .ml-1 { margin-left: 0.25rem; }
+    .ml-2 { margin-left: 0.5rem; }
+    .mx-auto { margin-left: auto; margin-right: auto; }
+    .space-y-1\.5 > * + * { margin-top: 0.375rem; }
+    .space-y-2 > * + * { margin-top: 0.5rem; }
+    .space-y-3 > * + * { margin-top: 0.75rem; }
+    .space-y-4 > * + * { margin-top: 1rem; }
+
+    /* Dimensions */
+    .w-1\.5 { width: 0.375rem; }
+    .h-1\.5 { height: 0.375rem; }
+    .w-2 { width: 0.5rem; }
+    .h-2 { height: 0.5rem; }
+    .w-2\.5 { width: 0.625rem; }
+    .h-2\.5 { height: 0.625rem; }
+    .w-4 { width: 1rem; }
+    .h-4 { height: 1rem; }
+    .w-5 { width: 1.25rem; }
+    .h-5 { height: 1.25rem; }
+    .w-6 { width: 1.5rem; }
+    .w-7 { width: 1.75rem; }
+    .h-7 { height: 1.75rem; }
+    .min-h-\[160px\] { min-height: 160px; }
+    .min-h-\[140px\] { min-height: 140px; }
+    .max-h-\[85vh\] { max-height: 85vh; }
+
+    /* Borders */
+    .rounded { border-radius: 0.25rem; }
+    .rounded-lg { border-radius: 0.5rem; }
+    .rounded-xl { border-radius: 0.75rem; }
+    .rounded-2xl { border-radius: 1rem; }
+    .rounded-full { border-radius: 9999px; }
+    .rounded-t-3xl { border-top-left-radius: 1.5rem; border-top-right-radius: 1.5rem; }
+    .border { border-width: 1px; border-style: solid; }
+    .border-t { border-top-width: 1px; border-top-style: solid; }
+    .border-b { border-bottom-width: 1px; border-bottom-style: solid; }
+    
+    .border-pit-800 { border-color: var(--pit-800); }
+    .border-pit-700 { border-color: var(--pit-700); }
+    .border-racing-cyan { border-color: var(--racing-cyan); }
+    .border-racing-purple { border-color: var(--racing-purple); }
+    .border-emerald-400 { border-color: #34d399; }
+    .border-emerald-500 { border-color: #10b981; }
+    .border-amber-400 { border-color: #fbbf24; }
+    .border-amber-500 { border-color: #f59e0b; }
+    .border-red-500 { border-color: #ef4444; }
+    .border-cyan-800 { border-color: #155e75; }
+
+    /* Typography */
+    .font-display { font-family: var(--font-display); }
+    .font-mono { font-family: var(--font-mono); }
+    .font-sans { font-family: var(--font-sans); }
+    .text-\[9px\] { font-size: 9px; line-height: 12px; }
+    .text-\[10px\] { font-size: 10px; line-height: 14px; }
+    .text-\[11px\] { font-size: 11px; line-height: 15px; }
+    .text-xs { font-size: 0.75rem; line-height: 1rem; }
+    .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+    .text-base { font-size: 1rem; line-height: 1.5rem; }
+    .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+    .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+    .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+    .text-6xl { font-size: 3.75rem; line-height: 1; }
+    .font-bold { font-weight: 700; }
+    .font-extrabold { font-weight: 800; }
+    .font-black { font-weight: 900; }
+    .font-semibold { font-weight: 600; }
+    .tracking-wider { letter-spacing: 0.05em; }
+    .tracking-widest { letter-spacing: 0.1em; }
+    .tracking-tight { letter-spacing: -0.025em; }
+    .leading-none { line-height: 1; }
+
+    /* Colors */
+    .bg-pit-950 { background-color: var(--pit-950); }
+    .bg-pit-900 { background-color: var(--pit-900); }
+    .bg-pit-850 { background-color: var(--pit-850); }
+    .bg-pit-800 { background-color: var(--pit-800); }
+    .bg-racing-cyan { background-color: var(--racing-cyan); }
+    .bg-cyan-950 { background-color: #083344; }
+    .bg-purple-950 { background-color: #2e0854; }
+    .bg-emerald-950 { background-color: #064e3b; }
+    .bg-amber-950 { background-color: #451a03; }
+    .bg-red-950 { background-color: #450a0a; }
+    .bg-red-600 { background-color: #dc2626; }
+    .bg-slate-500 { background-color: #64748b; }
+    .bg-current { background-color: currentColor; }
+    .bg-black-modal { background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(4px); }
+
+    .text-white { color: #ffffff; }
+    .text-slate-200 { color: #e2e8f0; }
+    .text-slate-300 { color: #cbd5e1; }
+    .text-slate-400 { color: #94a3b8; }
+    .text-slate-500 { color: #64748b; }
+    .text-racing-cyan { color: var(--racing-cyan); }
+    .text-racing-purple { color: var(--racing-purple); }
+    .text-racing-green { color: var(--racing-green); }
+    .text-purple-400 { color: #c084fc; }
+    .text-emerald-400 { color: #34d399; }
+    .text-amber-400 { color: #fbbf24; }
+    .text-red-400 { color: #f87171; }
+    .text-pit-950 { color: var(--pit-950); }
+
+    .btn-green-grad {
+      background: linear-gradient(135deg, #059669 0%, #10b981 50%, #0d9488 100%);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+    .btn-amber-grad {
+      background: linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #d97706 100%);
+      border: 1px solid rgba(251, 191, 36, 0.4);
+    }
+    .btn-cyan-grad {
+      background: linear-gradient(135deg, #06b6d4 0%, #14b8a6 50%, #10b981 100%);
+      border: 1px solid #67e8f9;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    .pointer-events-none { pointer-events: none; }
+    .pointer-events-auto { pointer-events: auto; }
+  </style>
+</head>
+<body>
+
+  <!-- Header: Brand + Status + Track/Vehicle Selectors -->
+  <header class="w-full flex flex-col gap-2.5">
+    
+    <!-- Top Row: App Title & Utilities -->
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-racing-cyan animate-pulse"></span>
+        <h1 class="font-display font-extrabold text-base tracking-wider text-white">
+          VOID<span class="text-racing-cyan">VOYAGERS</span>
+        </h1>
+        <div id="backend-status-pill" class="text-[9px] font-mono px-2 py-0.5 rounded bg-pit-850 text-slate-400 border border-pit-700 flex items-center gap-1.5" title="RP2350 MicroPython Link">
+          <span id="backend-status-dot" class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="backend-status-text">RP2350</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-1.5">
+        <!-- View Switcher: Timer vs Telemetry -->
+        <button id="btn-view-toggle" class="px-2.5 py-1.5 rounded-xl bg-pit-850 border border-racing-cyan text-racing-cyan font-mono font-bold text-[10px] tracking-wider tactile-btn flex items-center gap-1" title="Switch between Timer and Sensor Telemetry">
+          <span id="view-toggle-label">TELEM</span>
+        </button>
+
+        <!-- Audio Tone Toggle -->
+        <button id="btn-audio-toggle" class="p-2 rounded-xl bg-pit-850 border border-pit-700 text-slate-300 tactile-btn" title="Toggle Audio Cues">
+          <svg class="w-4 h-4 text-emerald-400" id="audio-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+          </svg>
+        </button>
+
+        <!-- Reset Session Button -->
+        <button id="btn-reset-session" class="p-2 rounded-xl bg-pit-850 border border-pit-700 text-slate-400 tactile-btn" title="Clear Session Laps">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+        </button>
+
+        <!-- CSV Export -->
+        <button id="btn-export-csv" class="p-2 rounded-xl bg-pit-850 border border-pit-700 text-slate-300 tactile-btn" title="Export Laps CSV">
+          <svg class="w-4 h-4 text-racing-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Second Row: Track & Vehicle Selector Targets -->
+    <div class="grid grid-cols-2 gap-2">
+      <button id="btn-open-track-select" class="flex items-center justify-between p-2.5 rounded-xl bg-pit-900 border border-pit-800 text-left tactile-btn">
+        <div class="truncate">
+          <div class="text-[9px] font-mono uppercase tracking-widest text-slate-400">TRACK</div>
+          <div class="text-xs font-display font-bold text-slate-200 truncate" id="label-current-track">Select Track</div>
+        </div>
+        <svg class="w-4 h-4 text-slate-400 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+
+      <button id="btn-open-vehicle-select" class="flex items-center justify-between p-2.5 rounded-xl bg-pit-900 border border-pit-800 text-left tactile-btn">
+        <div class="truncate">
+          <div class="text-[9px] font-mono uppercase tracking-widest text-slate-400">VEHICLE</div>
+          <div class="text-xs font-display font-bold text-racing-cyan truncate" id="label-current-vehicle">Select Vehicle</div>
+        </div>
+        <svg class="w-4 h-4 text-slate-400 flex-shrink-0 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+      </button>
+    </div>
+
+  </header>
+
+  <!-- Notification Toast Area -->
+  <div id="toast-container" class="fixed top-3 left-3 right-3 flex flex-col gap-1.5 pointer-events-none max-w-sm mx-auto" style="z-index: 9999;"></div>
+
+  <!-- VIEW 1: Main Display Card: Digital Racing Gauge -->
+  <main id="view-timer" class="w-full flex flex-col gap-3 my-2 flex-1">
+    
+    <div class="gauge-bevel rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden border border-pit-800">
+      
+      <!-- Top info line: Lap number & Delta pill -->
+      <div class="flex items-center justify-between mb-1">
+        <div class="flex items-baseline gap-2">
+          <span class="text-xs font-mono font-bold text-slate-400">LAP</span>
+          <span class="text-3xl font-display font-black text-white" id="live-lap-counter">1</span>
+        </div>
+
+        <!-- Delta Indicator -->
+        <div id="delta-container" class="px-2.5 py-1 rounded-lg bg-pit-850 border border-pit-700 font-mono font-bold text-xs flex items-center gap-1 text-slate-400">
+          <span id="delta-symbol">DELTA</span>
+          <span id="delta-value">--.---</span>
+        </div>
+      </div>
+
+      <!-- Massive Central Live Timer -->
+      <div class="py-4 text-center">
+        <div class="lcd-display text-6xl font-black text-white tracking-tight leading-none" id="live-timer-text">
+          00:00.00
+        </div>
+        <div class="text-[10px] font-mono tracking-widest text-slate-400 mt-2 uppercase flex items-center justify-center gap-1.5" id="timer-status-line">
+          <span class="w-1.5 h-1.5 rounded-full bg-slate-500" id="timer-status-dot"></span>
+          <span id="timer-status-text">TIMER STOPPED</span>
+        </div>
+      </div>
+
+      <!-- Quick Benchmarks: Best Lap, Last Lap -->
+      <div class="grid grid-cols-2 gap-2 pt-3 border-t border-pit-800">
+        <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+          <div class="text-[9px] font-mono text-purple-400 uppercase tracking-wider font-semibold">BEST LAP</div>
+          <div class="lcd-display text-lg font-bold text-white mt-0.5" id="stat-best-time">--:--.---</div>
+          <div class="text-[9px] font-mono text-slate-400" id="stat-best-lap-num">NO LAPS YET</div>
+        </div>
+
+        <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+          <div class="text-[9px] font-mono text-slate-400 uppercase tracking-wider font-semibold">LAST LAP</div>
+          <div class="lcd-display text-lg font-bold text-slate-200 mt-0.5" id="stat-last-time">--:--.---</div>
+          <div class="text-[9px] font-mono text-slate-400" id="stat-last-delta">DELTA: ---</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Software Touch Controls -->
+    <div class="w-full flex flex-col gap-2">
+      
+      <!-- Primary Lap Action Button -->
+      <button id="btn-lap-trigger" class="tactile-btn btn-green-grad w-full py-5 px-4 rounded-2xl text-white font-display font-black text-2xl tracking-wider flex items-center justify-center gap-3">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span id="btn-lap-text">START TIMER</span>
+      </button>
+
+      <!-- Secondary Controls: Pause / Stop -->
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btn-pause-toggle" class="tactile-btn py-3 px-3 rounded-xl bg-pit-850 border border-pit-700 font-display font-bold text-xs tracking-wider text-slate-300 flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span id="btn-pause-text">PAUSE</span>
+        </button>
+
+        <button id="btn-stop-session" class="tactile-btn py-3 px-3 rounded-xl bg-pit-850 border border-pit-700 font-display font-bold text-xs tracking-wider text-slate-300 flex items-center justify-center gap-1.5">
+          <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+          <span>FINISH / STOP</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Completed Laps History List -->
+    <div class="gauge-bevel rounded-xl p-3 flex-1 flex flex-col min-h-[160px] overflow-hidden border border-pit-800">
+      <div class="flex items-center justify-between pb-2 border-b border-pit-800 mb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="text-xs font-display font-bold text-slate-200 uppercase tracking-wide">COMPLETED LAPS</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-pit-800 font-mono text-slate-400" id="badge-lap-count">0</span>
+        </div>
+        <div class="text-[10px] font-mono text-slate-400" id="stat-avg-pace">AVG: --:--.---</div>
+      </div>
+
+      <div class="overflow-y-auto flex-1 space-y-1.5 pr-0.5" id="lap-cards-container">
+        <div id="lap-empty-state" class="text-center py-6 text-slate-500 font-sans text-xs italic">
+          No recorded laps yet. Tap "START TIMER" to roll out.
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- VIEW 2: All-in-One Sensor Status & Telemetry View -->
+  <main id="view-telemetry" class="w-full flex flex-col gap-3 my-2 flex-1 hidden">
+    
+    <!-- Hardware Sensor Status & I2C Bus Scanner -->
+    <div class="gauge-bevel rounded-2xl p-4 border border-pit-800 flex flex-col gap-2.5">
+      <div class="flex items-center justify-between border-b border-pit-800 pb-2">
+        <span class="text-xs font-display font-bold text-white uppercase tracking-wider">HARDWARE SENSOR STATUS</span>
+        <span class="text-[10px] font-mono text-slate-400">I2C0 (GP4 / GP5)</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+        <div class="bg-pit-900 p-2.5 rounded-xl border border-pit-800 flex items-center justify-between">
+          <div>
+            <div class="text-[9px] text-slate-500">IMU (0x6A)</div>
+            <div class="text-[11px] font-bold text-slate-200">ISM330DHCX</div>
+          </div>
+          <span id="status-imu-badge" class="text-[9px] px-2 py-0.5 rounded font-bold border bg-pit-850 text-slate-400 border-pit-700">CHECKING</span>
+        </div>
+
+        <div class="bg-pit-900 p-2.5 rounded-xl border border-pit-800 flex items-center justify-between">
+          <div>
+            <div class="text-[9px] text-slate-500">GPS (0x10)</div>
+            <div class="text-[11px] font-bold text-slate-200">PA1010D</div>
+          </div>
+          <span id="status-gps-badge" class="text-[9px] px-2 py-0.5 rounded font-bold border bg-pit-850 text-slate-400 border-pit-700">CHECKING</span>
+        </div>
+      </div>
+
+      <!-- Raw I2C Address Bus Readout -->
+      <div class="bg-pit-950 p-2.5 rounded-xl border border-pit-800 flex items-center justify-between text-xs font-mono">
+        <span class="text-[10px] text-slate-400">DETECTED I2C ADDRESSES:</span>
+        <span id="i2c-scan-list" class="text-[11px] font-bold text-racing-cyan">Scanning...</span>
+      </div>
+    </div>
+
+    <!-- Live GPS Readout Box -->
+    <div class="gauge-bevel rounded-2xl p-4 border border-pit-800 flex flex-col gap-2.5">
+      <div class="flex items-center justify-between border-b border-pit-800 pb-2">
+        <span class="text-xs font-display font-bold text-white uppercase tracking-wider">PA1010D GPS FEED</span>
+        <span id="telem-gps-fix" class="text-[9px] font-mono px-2 py-0.5 rounded bg-pit-850 text-slate-400 border border-pit-700">NO FIX</span>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 text-center font-mono">
+        <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+          <div class="text-[9px] text-slate-400">SPEED (MPH)</div>
+          <div class="text-lg font-bold text-white mt-0.5" id="telem-speed">0.0</div>
+        </div>
+        <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+          <div class="text-[9px] text-slate-400">SATELLITES</div>
+          <div class="text-lg font-bold text-racing-cyan mt-0.5" id="telem-sats">0</div>
+        </div>
+        <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+          <div class="text-[9px] text-slate-400">HEADING</div>
+          <div class="text-lg font-bold text-slate-200 mt-0.5" id="telem-heading">0°</div>
+        </div>
+      </div>
+
+      <div class="bg-pit-950 p-2 rounded-xl border border-pit-800 flex items-center justify-between text-xs font-mono">
+        <span class="text-[10px] text-slate-400">LAT / LON:</span>
+        <span class="text-[11px] text-slate-200" id="telem-coords">0.00000, 0.00000</span>
+      </div>
+    </div>
+
+    <!-- Live 6-DOF IMU Readout & Vertically Scaled Equal-Size Plots -->
+    <div class="gauge-bevel rounded-2xl p-4 border border-pit-800 flex flex-col gap-3">
+      <div class="flex items-center justify-between border-b border-pit-800 pb-2">
+        <span class="text-xs font-display font-bold text-white uppercase tracking-wider">ISM330DHCX 6-DOF IMU & PLOTS</span>
+        <span id="telem-rate-badge" class="text-[10px] font-mono text-racing-cyan">LIVE 60Hz+</span>
+      </div>
+
+      <!-- Vertically Stacked Equal-Size Chart Blocks (220px canvas height each) -->
+      <div class="flex flex-col gap-3 my-1">
+        
+        <!-- Block 1: G-G Friction Circle -->
+        <div class="bg-pit-950 p-3 rounded-xl border border-pit-800 flex flex-col items-center justify-between" style="height: 265px;">
+          <div class="w-full flex items-center justify-between text-[10px] font-mono text-slate-400">
+            <span>G-G FRICTION CIRCLE (LAT vs LONG)</span>
+            <span>1.5G RINGS</span>
+          </div>
+          <canvas id="canvas-gg" width="220" height="220" style="width:220px; height:220px; background:#06080c; border-radius:8px;"></canvas>
+        </div>
+
+        <!-- Block 2: 3-Axis Rolling Strip Chart (Equal Height) -->
+        <div class="bg-pit-950 p-3 rounded-xl border border-pit-800 flex flex-col justify-between" style="height: 265px;">
+          <div class="w-full flex items-center justify-between text-[10px] font-mono text-slate-400">
+            <span>3-AXIS G-FORCE WAVEFORM</span>
+            <div class="flex items-center gap-2">
+              <span class="text-racing-cyan">■ X</span>
+              <span class="text-amber-400">■ Y</span>
+              <span class="text-emerald-400">■ Z</span>
+            </div>
+          </div>
+          <canvas id="canvas-imu-strip" width="420" height="220" style="width:100%; height:220px; background:#06080c; border-radius:8px;"></canvas>
+        </div>
+
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 text-center font-mono">
+        <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+          <div class="text-[9px] text-slate-400">ACCEL X</div>
+          <div class="text-sm font-bold text-racing-cyan mt-0.5" id="telem-ax">0.00 G</div>
+        </div>
+        <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+          <div class="text-[9px] text-slate-400">ACCEL Y</div>
+          <div class="text-sm font-bold text-amber-400 mt-0.5" id="telem-ay">0.00 G</div>
+        </div>
+        <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+          <div class="text-[9px] text-slate-400">ACCEL Z</div>
+          <div class="text-sm font-bold text-slate-200 mt-0.5" id="telem-az">0.00 G</div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 text-center font-mono">
+        <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+          <div class="text-[9px] text-slate-400">GYRO X</div>
+          <div class="text-xs font-bold text-slate-300 mt-0.5" id="telem-gx">0.0 °/s</div>
+        </div>
+        <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+          <div class="text-[9px] text-slate-400">GYRO Y</div>
+          <div class="text-xs font-bold text-slate-300 mt-0.5" id="telem-gy">0.0 °/s</div>
+        </div>
+        <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+          <div class="text-[9px] text-purple-400">GYRO Z (YAW)</div>
+          <div class="text-xs font-bold text-white mt-0.5" id="telem-gz">0.0 °/s</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal: Manage Tracks and Vehicles on RP2350 Flash -->
+  <div id="modal-selector" class="fixed inset-0 bg-black-modal hidden items-end justify-center p-0" style="z-index: 1000;">
+    <div class="bg-pit-900 border-t border-pit-700 rounded-t-3xl max-w-md w-full p-5 space-y-4 max-h-[85vh] flex flex-col">
+      
+      <div class="flex items-center justify-between pb-2 border-b border-pit-800 flex-shrink-0">
+        <div>
+          <h3 class="font-display font-bold text-base text-white" id="modal-title">Manage Tracks</h3>
+          <p class="text-[11px] text-slate-400 font-sans" id="modal-subtitle">Stored persistently on RP2350 data.json</p>
+        </div>
+        <button id="btn-close-modal" class="p-1.5 rounded-xl bg-pit-800 text-slate-400 tactile-btn" style="border:none;">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <!-- Add New Item Row -->
+      <form id="form-add-item" class="flex flex-col gap-1.5 flex-shrink-0" onsubmit="event.preventDefault(); window.addNewItem();">
+        <label class="block text-[10px] font-mono uppercase tracking-wider text-slate-400" id="modal-input-label">ADD NEW TRACK</label>
+        <div class="flex gap-2">
+          <input type="text" id="modal-add-input" placeholder="e.g. Sonoma Raceway" autocomplete="off" class="flex-1 bg-pit-950 border border-pit-700 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 font-sans" style="outline: none;">
+          <button type="submit" id="btn-add-item" class="px-4 py-2.5 bg-racing-cyan text-pit-950 font-display font-black text-xs rounded-xl tactile-btn flex items-center gap-1.5 flex-shrink-0" style="border: none;">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+            <span>ADD</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- Scrollable List of Items -->
+      <div class="flex-1 overflow-y-auto space-y-2 pr-0.5 min-h-[140px]" id="modal-item-list"></div>
+
+    </div>
+  </div>
+
+  <!-- Reset Confirmation Dialog Modal -->
+  <div id="modal-reset-confirm" class="fixed inset-0 bg-black-modal hidden items-center justify-center p-4" style="z-index: 1000;">
+    <div class="bg-pit-900 border border-pit-700 rounded-2xl max-w-xs w-full p-5 text-center space-y-3">
+      <div class="w-10 h-10 rounded-full bg-red-950 border border-red-500 text-red-400 mx-auto flex items-center justify-center">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+      <h3 class="font-display font-bold text-white text-base">Reset Session?</h3>
+      <p class="text-xs text-slate-400 font-sans">This will clear all logged laps and benchmark records for this run.</p>
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button id="btn-cancel-reset" class="py-2.5 rounded-xl bg-pit-800 text-slate-300 font-mono text-xs tactile-btn" style="border: none;">CANCEL</button>
+        <button id="btn-confirm-reset" class="py-2.5 rounded-xl bg-red-600 text-white font-mono text-xs font-bold tactile-btn" style="border: none;">YES, RESET</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    class PitAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      beep(freq, duration, type = 'sine') {
+        if (!this.enabled) return;
+        try {
+          this.init();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.18, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      lapStandard() { this.beep(880, 0.12, 'sine'); }
+      lapBest() {
+        this.beep(880, 0.08);
+        setTimeout(() => this.beep(1320, 0.22), 90);
+      }
+    }
+
+    const audio = new PitAudio();
+
+    let wakeLock = null;
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      } catch (err) {}
+    }
+
+    function releaseWakeLock() {
+      if (wakeLock !== null) {
+        wakeLock.release().catch(() => {});
+        wakeLock = null;
+      }
+    }
+
+    function hapticFeedback(pattern = [40]) {
+      if ('vibrate' in navigator) {
+        try { navigator.vibrate(pattern); } catch (e) {}
+      }
+    }
+
+    const state = {
+      isRunning: false,
+      isPaused: false,
+      lapNumber: 1,
+      lapStartTime: 0,
+      currentLapElapsed: 0,
+      bestLapTime: null,
+      bestLapNumber: null,
+      lastLapTime: null,
+      currentTrack: localStorage.getItem('vv_current_track') || null,
+      currentCar: localStorage.getItem('vv_current_car') || null,
+      tracks: [],
+      cars: [],
+      laps: [],
+      isLinked: false
+    };
+
+    function formatTime(ms) {
+      if (ms === null || ms === undefined || isNaN(ms)) return '--:--.---';
+      const totalSec = ms / 1000;
+      const minutes = Math.floor(totalSec / 60);
+      const seconds = Math.floor(totalSec % 60);
+      const millis = Math.floor(ms % 1000);
+      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(millis).padStart(3, '0')}`;
+    }
+
+    function formatTimeHundredths(ms) {
+      if (ms === null || ms === undefined || isNaN(ms)) return '00:00.00';
+      const totalSec = ms / 1000;
+      const minutes = Math.floor(totalSec / 60);
+      const seconds = Math.floor(totalSec % 60);
+      const hundredths = Math.floor((ms % 1000) / 10);
+      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`;
+    }
+
+    // --- RP2350 MicroPython Storage Sync ---
+    async function loadBackendData() {
+      const dot = document.getElementById('backend-status-dot');
+      const text = document.getElementById('backend-status-text');
+      const pill = document.getElementById('backend-status-pill');
+
+      try {
+        const res = await fetch('/api/data', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Bad response');
+        const data = await res.json();
+        
+        state.tracks = Array.isArray(data.tracks) ? data.tracks : [];
+        state.cars = Array.isArray(data.cars) ? data.cars : [];
+        state.isLinked = true;
+
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
+        text.innerText = 'RP2350 LINKED';
+        text.className = 'text-emerald-400 font-bold';
+        pill.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500 flex items-center gap-1.5';
+      } catch (err) {
+        state.isLinked = false;
+        state.tracks = JSON.parse(localStorage.getItem('vv_tracks') || '[]');
+        state.cars = JSON.parse(localStorage.getItem('vv_cars') || '[]');
+        
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-slate-500';
+        text.innerText = 'LOCAL / OFFLINE';
+        text.className = 'text-slate-400';
+        pill.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-pit-850 text-slate-400 border border-pit-700 flex items-center gap-1.5';
+      }
+
+      if (state.currentTrack && !state.tracks.includes(state.currentTrack)) {
+        state.currentTrack = state.tracks.length > 0 ? state.tracks[0] : null;
+      }
+      if (state.currentCar && !state.cars.includes(state.currentCar)) {
+        state.currentCar = state.cars.length > 0 ? state.cars[0] : null;
+      }
+
+      updateSelectorLabels();
+    }
+
+    async function syncToBackend() {
+      localStorage.setItem('vv_tracks', JSON.stringify(state.tracks));
+      localStorage.setItem('vv_cars', JSON.stringify(state.cars));
+
+      try {
+        const res = await fetch('/api/data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cars: state.cars,
+            tracks: state.tracks
+          })
+        });
+
+        if (res.ok) {
+          showToast('Saved to RP2350', 'green');
+        } else {
+          showToast('RP2350 write error', 'amber');
+        }
+      } catch (err) {
+        if (!state.isLinked) {
+          showToast('Saved locally (Offline)', 'cyan');
+        } else {
+          showToast('Failed to reach RP2350', 'amber');
+        }
+      }
+    }
+
+    function updateSelectorLabels() {
+      document.getElementById('label-current-track').innerText = state.currentTrack || 'Select Track';
+      document.getElementById('label-current-vehicle').innerText = state.currentCar || 'Select Vehicle';
+    }
+
+    let animationFrameId = null;
+
+    function timerLoop() {
+      if (state.isRunning && !state.isPaused) {
+        state.currentLapElapsed = performance.now() - state.lapStartTime;
+        document.getElementById('live-timer-text').innerText = formatTimeHundredths(state.currentLapElapsed);
+        updateLiveDelta();
+      }
+      animationFrameId = requestAnimationFrame(timerLoop);
+    }
+
+    function updateLiveDelta() {
+      if (!state.bestLapTime) return;
+
+      const delta = state.currentLapElapsed - state.bestLapTime;
+      const isFaster = delta <= 0;
+      const formatted = (Math.abs(delta) / 1000).toFixed(2);
+      const symbol = isFaster ? '-' : '+';
+
+      const container = document.getElementById('delta-container');
+      const valElem = document.getElementById('delta-value');
+      const symElem = document.getElementById('delta-symbol');
+
+      valElem.innerText = `${formatted}s`;
+      symElem.innerText = symbol;
+
+      if (isFaster) {
+        container.className = 'px-2.5 py-1 rounded-lg bg-emerald-950 border border-emerald-500 font-mono font-bold text-xs flex items-center gap-1 text-emerald-400';
+      } else {
+        container.className = 'px-2.5 py-1 rounded-lg bg-amber-950 border border-amber-500 font-mono font-bold text-xs flex items-center gap-1 text-amber-400';
+      }
+    }
+
+    function handleLapTrigger() {
+      hapticFeedback([60]);
+
+      if (!state.isRunning) {
+        state.isRunning = true;
+        state.isPaused = false;
+        state.lapStartTime = performance.now();
+        state.currentLapElapsed = 0;
+        
+        requestWakeLock();
+        audio.lapStandard();
+
+        updateControlsUI();
+        const trackName = state.currentTrack || 'Untracked Session';
+        showToast(`Lap 1 Started: ${trackName}`, 'cyan');
+        return;
+      }
+
+      const completedTime = state.currentLapElapsed;
+      const completedLapNum = state.lapNumber;
+
+      let isNewSessionBest = false;
+      let deltaVsBest = 0;
+
+      if (state.bestLapTime === null || completedTime < state.bestLapTime) {
+        isNewSessionBest = true;
+        deltaVsBest = state.bestLapTime ? completedTime - state.bestLapTime : 0;
+        state.bestLapTime = completedTime;
+        state.bestLapNumber = completedLapNum;
+        audio.lapBest();
+        hapticFeedback([80, 50, 80]);
+        showToast(`NEW BEST: ${formatTime(completedTime)}!`, 'purple');
+      } else {
+        deltaVsBest = completedTime - state.bestLapTime;
+        audio.lapStandard();
+      }
+
+      state.lastLapTime = completedTime;
+
+      const record = {
+        lapNum: completedLapNum,
+        time: completedTime,
+        delta: deltaVsBest,
+        isBest: isNewSessionBest,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      };
+      state.laps.unshift(record);
+
+      state.lapNumber++;
+      state.lapStartTime = performance.now();
+      state.currentLapElapsed = 0;
+
+      document.getElementById('live-lap-counter').innerText = state.lapNumber;
+      
+      updateBenchmarkStats();
+      renderLapCards();
+    }
+
+    function togglePause() {
+      if (!state.isRunning) return;
+      hapticFeedback([30]);
+
+      state.isPaused = !state.isPaused;
+      if (state.isPaused) {
+        showToast('Lap timing paused', 'amber');
+      } else {
+        state.lapStartTime = performance.now() - state.currentLapElapsed;
+        showToast('Lap timing resumed', 'green');
+      }
+      updateControlsUI();
+    }
+
+    function stopTimerSession() {
+      if (!state.isRunning) return;
+      hapticFeedback([50, 40]);
+      
+      state.isRunning = false;
+      state.isPaused = false;
+      releaseWakeLock();
+
+      updateControlsUI();
+      showToast('Session finished. Laps stored below.', 'cyan');
+    }
+
+    function updateControlsUI() {
+      const lapBtn = document.getElementById('btn-lap-trigger');
+      const lapText = document.getElementById('btn-lap-text');
+      const pauseText = document.getElementById('btn-pause-text');
+      const statusText = document.getElementById('timer-status-text');
+      const statusDot = document.getElementById('timer-status-dot');
+
+      if (!state.isRunning) {
+        lapBtn.className = 'tactile-btn btn-green-grad w-full py-5 px-4 rounded-2xl text-white font-display font-black text-2xl tracking-wider flex items-center justify-center gap-3';
+        lapText.innerText = 'START TIMER';
+        pauseText.innerText = 'PAUSE';
+        statusText.innerText = 'TIMER STOPPED';
+        statusDot.className = 'w-1.5 h-1.5 rounded-full bg-slate-500';
+      } else if (state.isPaused) {
+        lapBtn.className = 'tactile-btn btn-amber-grad w-full py-5 px-4 rounded-2xl text-white font-display font-black text-2xl tracking-wider flex items-center justify-center gap-3';
+        lapText.innerText = 'RESUME TIMER';
+        pauseText.innerText = 'RESUME';
+        statusText.innerText = 'SESSION PAUSED';
+        statusDot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400';
+      } else {
+        lapBtn.className = 'tactile-btn btn-cyan-grad w-full py-5 px-4 rounded-2xl text-pit-950 font-display font-black text-2xl tracking-wider flex items-center justify-center gap-3';
+        lapText.innerText = 'TAP LAP';
+        pauseText.innerText = 'PAUSE';
+        statusText.innerText = `LAP ${state.lapNumber} RUNNING`;
+        statusDot.className = 'w-1.5 h-1.5 rounded-full bg-racing-cyan animate-pulse';
+      }
+    }
+
+    function updateBenchmarkStats() {
+      if (state.bestLapTime) {
+        document.getElementById('stat-best-time').innerText = formatTime(state.bestLapTime);
+        document.getElementById('stat-best-lap-num').innerText = `ON LAP ${state.bestLapNumber}`;
+      }
+      if (state.lastLapTime) {
+        document.getElementById('stat-last-time').innerText = formatTime(state.lastLapTime);
+        const lastDelta = state.laps[0].delta;
+        const sign = lastDelta <= 0 ? '-' : '+';
+        document.getElementById('stat-last-delta').innerText = `DELTA: ${sign}${(Math.abs(lastDelta)/1000).toFixed(2)}s`;
+      }
+      if (state.laps.length > 0) {
+        const totalMs = state.laps.reduce((acc, l) => acc + l.time, 0);
+        const avg = totalMs / state.laps.length;
+        document.getElementById('stat-avg-pace').innerText = `AVG: ${formatTime(avg)}`;
+      }
+    }
+
+    function renderLapCards() {
+      const container = document.getElementById('lap-cards-container');
+      const badge = document.getElementById('badge-lap-count');
+      badge.innerText = state.laps.length;
+
+      if (state.laps.length === 0) {
+        container.innerHTML = `
+          <div id="lap-empty-state" class="text-center py-6 text-slate-500 font-sans text-xs italic">
+            No recorded laps yet. Tap "START TIMER" to roll out.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = state.laps.map(l => {
+        const isBest = l.isBest;
+        const border = isBest ? 'border-racing-purple bg-purple-950' : 'border-pit-800 bg-pit-900';
+        const deltaText = isBest ? 'SESSION BEST' : (l.delta <= 0 ? `-${(Math.abs(l.delta)/1000).toFixed(2)}s` : `+${(l.delta/1000).toFixed(2)}s`);
+        const deltaColor = isBest ? 'text-racing-purple font-bold' : (l.delta < 1200 ? 'text-racing-green' : 'text-slate-400');
+
+        return `
+          <div class="flex items-center justify-between p-2 rounded-xl border ${border} text-xs font-mono">
+            <div class="flex items-center gap-2">
+              <span class="w-6 text-slate-400 font-bold">L${l.lapNum}</span>
+              <span class="text-sm font-bold text-white">${formatTime(l.time)}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-[11px] ${deltaColor}">${deltaText}</span>
+              <span class="text-[10px] text-slate-500">${l.timestamp}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function showToast(msg, theme = 'cyan') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let border = 'border-racing-cyan text-racing-cyan';
+      if (theme === 'purple') border = 'border-racing-purple text-racing-purple';
+      if (theme === 'amber') border = 'border-amber-400 text-amber-400';
+      if (theme === 'green') border = 'border-emerald-400 text-emerald-400';
+
+      toast.className = `p-2.5 px-3 rounded-xl bg-pit-900 border ${border} font-mono text-xs flex items-center gap-2 pointer-events-auto`;
+      toast.style.transition = 'all 0.2s ease';
+      toast.innerHTML = `<span class="w-2 h-2 rounded-full bg-current"></span><span>${msg}</span>`;
+      
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-6px)';
+        setTimeout(() => toast.remove(), 250);
+      }, 2200);
+    }
+
+    document.getElementById('btn-lap-trigger').addEventListener('click', () => handleLapTrigger());
+    document.getElementById('btn-pause-toggle').addEventListener('click', () => togglePause());
+    document.getElementById('btn-stop-session').addEventListener('click', () => stopTimerSession());
+
+    const audioBtn = document.getElementById('btn-audio-toggle');
+    const audioIcon = document.getElementById('audio-icon');
+    audioBtn.addEventListener('click', () => {
+      audio.enabled = !audio.enabled;
+      if (audio.enabled) {
+        audioIcon.style.opacity = '1';
+        audioIcon.classList.add('text-emerald-400');
+        showToast('Audio Cues Active', 'green');
+      } else {
+        audioIcon.style.opacity = '0.3';
+        audioIcon.classList.remove('text-emerald-400');
+        showToast('Audio Cues Muted', 'amber');
+      }
+    });
+
+    const modalReset = document.getElementById('modal-reset-confirm');
+    document.getElementById('btn-reset-session').addEventListener('click', () => {
+      modalReset.classList.remove('hidden');
+      modalReset.classList.add('flex');
+    });
+
+    document.getElementById('btn-cancel-reset').addEventListener('click', () => {
+      modalReset.classList.add('hidden');
+      modalReset.classList.remove('flex');
+    });
+
+    document.getElementById('btn-confirm-reset').addEventListener('click', () => {
+      state.isRunning = false;
+      state.isPaused = false;
+      state.lapNumber = 1;
+      state.currentLapElapsed = 0;
+      state.bestLapTime = null;
+      state.bestLapNumber = null;
+      state.lastLapTime = null;
+      state.laps = [];
+
+      document.getElementById('live-lap-counter').innerText = '1';
+      document.getElementById('live-timer-text').innerText = '00:00.00';
+      document.getElementById('delta-value').innerText = '--.---';
+      document.getElementById('delta-symbol').innerText = 'DELTA';
+      document.getElementById('delta-container').className = 'px-2.5 py-1 rounded-lg bg-pit-850 border border-pit-700 font-mono font-bold text-xs flex items-center gap-1 text-slate-400';
+      document.getElementById('stat-best-time').innerText = '--:--.---';
+      document.getElementById('stat-best-lap-num').innerText = 'NO LAPS YET';
+      document.getElementById('stat-last-time').innerText = '--:--.---';
+      document.getElementById('stat-last-delta').innerText = 'DELTA: ---';
+      document.getElementById('stat-avg-pace').innerText = 'AVG: --:--.---';
+
+      releaseWakeLock();
+      updateControlsUI();
+      renderLapCards();
+      modalReset.classList.add('hidden');
+      modalReset.classList.remove('flex');
+      showToast('Session reset', 'amber');
+    });
+
+    // --- Track & Vehicle Modal Handlers ---
+    let currentModalMode = 'track';
+    const modalSelector = document.getElementById('modal-selector');
+    const modalTitle = document.getElementById('modal-title');
+    const modalSubtitle = document.getElementById('modal-subtitle');
+    const modalInputLabel = document.getElementById('modal-input-label');
+    const modalAddInput = document.getElementById('modal-add-input');
+    const modalItemList = document.getElementById('modal-item-list');
+
+    function openSelector(mode) {
+      currentModalMode = mode;
+      modalSelector.classList.remove('hidden');
+      modalSelector.classList.add('flex');
+      modalAddInput.value = '';
+
+      if (mode === 'track') {
+        modalTitle.innerText = 'Manage Tracks';
+        modalSubtitle.innerText = 'Stored persistently in RP2350 data.json';
+        modalInputLabel.innerText = 'ADD NEW TRACK';
+        modalAddInput.placeholder = 'e.g. Sonoma Kart Track, Laguna Seca';
+      } else {
+        modalTitle.innerText = 'Manage Vehicles';
+        modalSubtitle.innerText = 'Stored persistently in RP2350 data.json';
+        modalInputLabel.innerText = 'ADD NEW VEHICLE';
+        modalAddInput.placeholder = 'e.g. LO206 Kart #14, Spec Miata';
+      }
+
+      renderModalItems();
+      setTimeout(() => modalAddInput.focus(), 50);
+    }
+
+    function renderModalItems() {
+      const isTrack = currentModalMode === 'track';
+      const items = isTrack ? state.tracks : state.cars;
+      const selectedItem = isTrack ? state.currentTrack : state.currentCar;
+      const singular = isTrack ? 'track' : 'vehicle';
+
+      if (items.length === 0) {
+        modalItemList.innerHTML = `
+          <div class="text-center py-8 text-slate-500 font-sans text-xs">
+            <svg class="w-8 h-8 mx-auto mb-2 opacity-40 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            No ${singular}s in RP2350 memory.<br>Type a name above and tap <span class="text-racing-cyan font-bold">ADD</span> to save.
+          </div>
+        `;
+        return;
+      }
+
+      modalItemList.innerHTML = items.map(item => {
+        const isSelected = item === selectedItem;
+        const activeClass = isSelected 
+          ? 'border-racing-cyan bg-cyan-950 text-white font-bold' 
+          : 'border-pit-800 bg-pit-850 text-slate-300';
+        
+        const escaped = item.replace(/'/g, "\\'");
+
+        return `
+          <div class="flex items-center gap-2">
+            <button class="flex-1 text-left p-3 rounded-xl border ${activeClass} text-xs font-mono tactile-btn flex items-center justify-between truncate" onclick="window.selectItem('${escaped}')">
+              <span class="truncate">${item}</span>
+              ${isSelected ? '<span class="text-[10px] text-racing-cyan uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 flex-shrink-0 ml-2">ACTIVE</span>' : ''}
+            </button>
+            <button class="p-3 rounded-xl bg-pit-850 border border-pit-800 text-slate-500 tactile-btn flex-shrink-0" onclick="window.deleteItem(event, '${escaped}')" title="Delete from RP2350">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.addNewItem = async function() {
+      const val = modalAddInput.value.trim();
+      if (!val) return;
+
+      const isTrack = currentModalMode === 'track';
+      const list = isTrack ? state.tracks : state.cars;
+
+      if (!list.includes(val)) {
+        list.push(val);
+        await syncToBackend();
+      }
+
+      window.selectItem(val);
+      modalAddInput.value = '';
+    };
+
+    window.selectItem = function(name) {
+      if (currentModalMode === 'track') {
+        state.currentTrack = name;
+        localStorage.setItem('vv_current_track', name);
+        document.getElementById('label-current-track').innerText = name;
+        showToast(`Track: ${name}`, 'cyan');
+      } else {
+        state.currentCar = name;
+        localStorage.setItem('vv_current_car', name);
+        document.getElementById('label-current-vehicle').innerText = name;
+        showToast(`Vehicle: ${name}`, 'cyan');
+      }
+      modalSelector.classList.add('hidden');
+      modalSelector.classList.remove('flex');
+    };
+
+    window.deleteItem = async function(e, name) {
+      e.stopPropagation();
+      const isTrack = currentModalMode === 'track';
+      
+      if (isTrack) {
+        state.tracks = state.tracks.filter(i => i !== name);
+        if (state.currentTrack === name) {
+          state.currentTrack = null;
+          localStorage.removeItem('vv_current_track');
+          document.getElementById('label-current-track').innerText = 'Select Track';
+        }
+      } else {
+        state.cars = state.cars.filter(i => i !== name);
+        if (state.currentCar === name) {
+          state.currentCar = null;
+          localStorage.removeItem('vv_current_car');
+          document.getElementById('label-current-vehicle').innerText = 'Select Vehicle';
+        }
+      }
+
+      renderModalItems();
+      await syncToBackend();
+    };
+
+    document.getElementById('btn-open-track-select').addEventListener('click', () => openSelector('track'));
+    document.getElementById('btn-open-vehicle-select').addEventListener('click', () => openSelector('car'));
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      modalSelector.classList.add('hidden');
+      modalSelector.classList.remove('flex');
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        handleLapTrigger();
+      }
+    });
+
+    document.getElementById('btn-export-csv').addEventListener('click', () => {
+      if (state.laps.length === 0) {
+        showToast('No laps recorded to export', 'amber');
+        return;
+      }
+      const trackName = state.currentTrack || 'Untracked';
+      const vehicleName = state.currentCar || 'Unspecified';
+
+      let csv = `Lap,Track,Vehicle,Time_Formatted,Time_ms,Delta_ms,Timestamp\n`;
+      state.laps.forEach(l => {
+        csv += `${l.lapNum},"${trackName}","${vehicleName}","${formatTime(l.time)}",${l.time.toFixed(1)},${l.delta.toFixed(1)},"${l.timestamp}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `VoidVoyagers_${trackName.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0,10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      showToast('Session exported to CSV', 'green');
+    });
+
+    // --- All-in-One View Toggle, High-Speed Polling & Live IMU Plots ---
+    let showingTelemetry = false;
+    let telemTimerId = null;
+    let telemRenderRafId = null;
+    let isFetchingTelem = false;
+
+    const PLOT_LEN = 180; // 3 seconds of 60Hz waveform history
+    const imuHistory = {
+      ax: new Array(PLOT_LEN).fill(0),
+      ay: new Array(PLOT_LEN).fill(0),
+      az: new Array(PLOT_LEN).fill(1),
+      trail: []
+    };
+
+    // High-speed sample queue & smoothing target for 60Hz+ rendering
+    const imuSampleQueue = [];
+    const liveImu = {
+      curAx: 0, curAy: 0, curAz: 1,
+      targetAx: 0, targetAy: 0, targetAz: 1,
+      gx: 0, gy: 0, gz: 0
+    };
+
+    function pushImuHistorySample(ax, ay, az) {
+      imuHistory.ax.push(ax);
+      if (imuHistory.ax.length > PLOT_LEN) imuHistory.ax.shift();
+      imuHistory.ay.push(ay);
+      if (imuHistory.ay.length > PLOT_LEN) imuHistory.ay.shift();
+      imuHistory.az.push(az);
+      if (imuHistory.az.length > PLOT_LEN) imuHistory.az.shift();
+
+      imuHistory.trail.push({ x: ax, y: ay });
+      if (imuHistory.trail.length > 40) imuHistory.trail.shift();
+    }
+
+    function drawImuPlots(ax, ay, az) {
+      // 1. Draw G-G Friction Circle
+      const ggCanvas = document.getElementById('canvas-gg');
+      if (ggCanvas) {
+        const ctx = ggCanvas.getContext('2d');
+        const w = ggCanvas.width;
+        const h = ggCanvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const maxG = 1.6;
+        const rMax = (w / 2) - 10;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Rings at 0.5G, 1.0G, 1.5G
+        [0.5, 1.0, 1.5].forEach(g => {
+          ctx.beginPath();
+          ctx.arc(cx, cy, (g / maxG) * rMax, 0, Math.PI * 2);
+          ctx.strokeStyle = g === 1.0 ? '#2b3952' : '#161f30';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        });
+
+        // Crosshairs
+        ctx.beginPath();
+        ctx.moveTo(cx, 6); ctx.lineTo(cx, h - 6);
+        ctx.moveTo(6, cy); ctx.lineTo(w - 6, cy);
+        ctx.strokeStyle = '#1e293b';
+        ctx.stroke();
+
+        // Trail dots
+        imuHistory.trail.forEach((pt, idx) => {
+          const alpha = (idx + 1) / imuHistory.trail.length;
+          const px = cx + (pt.x / maxG) * rMax;
+          const py = cy - (pt.y / maxG) * rMax;
+          ctx.beginPath();
+          ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(6, 182, 212, ${alpha * 0.45})`;
+          ctx.fill();
+        });
+
+        // Current G vector dot
+        const curX = cx + (ax / maxG) * rMax;
+        const curY = cy - (ay / maxG) * rMax;
+        ctx.beginPath();
+        ctx.arc(curX, curY, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      // 2. Draw 3-Axis Rolling Strip Chart
+      const stripCanvas = document.getElementById('canvas-imu-strip');
+      if (stripCanvas) {
+        const sCtx = stripCanvas.getContext('2d');
+        const sw = stripCanvas.width;
+        const sh = stripCanvas.height;
+        const midY = sh / 2;
+        const scaleG = 2.0; // +/- 2.0G full scale
+
+        sCtx.clearRect(0, 0, sw, sh);
+
+        // Zero & +/- 1G reference lines
+        sCtx.strokeStyle = '#161f30';
+        sCtx.lineWidth = 1;
+        [-1, 0, 1].forEach(g => {
+          const y = midY - (g / scaleG) * (midY - 8);
+          sCtx.beginPath();
+          sCtx.moveTo(0, y);
+          sCtx.lineTo(sw, y);
+          sCtx.stroke();
+        });
+
+        const drawTrace = (arr, color) => {
+          sCtx.beginPath();
+          sCtx.strokeStyle = color;
+          sCtx.lineWidth = 1.75;
+          const step = sw / (PLOT_LEN - 1);
+          for (let i = 0; i < arr.length; i++) {
+            const x = i * step;
+            const clamped = Math.max(-scaleG, Math.min(scaleG, arr[i]));
+            const y = midY - (clamped / scaleG) * (midY - 8);
+            if (i === 0) sCtx.moveTo(x, y);
+            else sCtx.lineTo(x, y);
+          }
+          sCtx.stroke();
+        };
+
+        drawTrace(imuHistory.az, '#34d399'); // Z (Green)
+        drawTrace(imuHistory.ay, '#fbbf24'); // Y (Amber)
+        drawTrace(imuHistory.ax, '#06b6d4'); // X (Cyan)
+      }
+    }
+
+    // 60Hz+ Render Loop: Drains 100Hz hardware batch & interpolates smoothly on every display frame
+    function telemetryRenderLoop() {
+      if (!showingTelemetry) return;
+
+      if (imuSampleQueue.length > 0) {
+        // Drain 1-2 samples per 60Hz frame to stay locked with the 100Hz hardware stream
+        const drainCount = imuSampleQueue.length > 4 ? 2 : 1;
+        for (let i = 0; i < drainCount && imuSampleQueue.length > 0; i++) {
+          const s = imuSampleQueue.shift();
+          liveImu.targetAx = s[0];
+          liveImu.targetAy = s[1];
+          liveImu.targetAz = s[2];
+          pushImuHistorySample(s[0], s[1], s[2]);
+        }
+        liveImu.curAx = liveImu.targetAx;
+        liveImu.curAy = liveImu.targetAy;
+        liveImu.curAz = liveImu.targetAz;
+      } else {
+        // Sub-frame interpolation at 60Hz between network packets
+        liveImu.curAx += (liveImu.targetAx - liveImu.curAx) * 0.45;
+        liveImu.curAy += (liveImu.targetAy - liveImu.curAy) * 0.45;
+        liveImu.curAz += (liveImu.targetAz - liveImu.curAz) * 0.45;
+        pushImuHistorySample(liveImu.curAx, liveImu.curAy, liveImu.curAz);
+      }
+
+      document.getElementById('telem-ax').innerText = `${liveImu.curAx.toFixed(2)} G`;
+      document.getElementById('telem-ay').innerText = `${liveImu.curAy.toFixed(2)} G`;
+      document.getElementById('telem-az').innerText = `${liveImu.curAz.toFixed(2)} G`;
+      document.getElementById('telem-gx').innerText = `${liveImu.gx.toFixed(1)} °/s`;
+      document.getElementById('telem-gy').innerText = `${liveImu.gy.toFixed(1)} °/s`;
+      document.getElementById('telem-gz').innerText = `${liveImu.gz.toFixed(1)} °/s`;
+
+      drawImuPlots(liveImu.curAx, liveImu.curAy, liveImu.curAz);
+      telemRenderRafId = requestAnimationFrame(telemetryRenderLoop);
+    }
+
+    async function scheduleNextTelemetry() {
+      if (!showingTelemetry) return;
+      await pollTelemetry();
+      if (showingTelemetry) {
+        // Immediate back-to-back polling (15ms breather) to stream 100Hz batches with minimal latency
+        telemTimerId = setTimeout(scheduleNextTelemetry, 15);
+      }
+    }
+
+    document.getElementById('btn-view-toggle').addEventListener('click', () => {
+      showingTelemetry = !showingTelemetry;
+      const timerView = document.getElementById('view-timer');
+      const telemView = document.getElementById('view-telemetry');
+      const btnLabel = document.getElementById('view-toggle-label');
+
+      if (showingTelemetry) {
+        timerView.classList.add('hidden');
+        telemView.classList.remove('hidden');
+        btnLabel.innerText = 'TIMER';
+        scheduleNextTelemetry();
+        telemRenderRafId = requestAnimationFrame(telemetryRenderLoop);
+      } else {
+        telemView.classList.add('hidden');
+        timerView.classList.remove('hidden');
+        btnLabel.innerText = 'TELEM';
+        if (telemTimerId) {
+          clearTimeout(telemTimerId);
+          telemTimerId = null;
+        }
+        if (telemRenderRafId) {
+          cancelAnimationFrame(telemRenderRafId);
+          telemRenderRafId = null;
+        }
+      }
+    });
+
+    async function pollTelemetry() {
+      if (isFetchingTelem) return;
+      isFetchingTelem = true;
+
+      const imuBadge = document.getElementById('status-imu-badge');
+      const gpsBadge = document.getElementById('status-gps-badge');
+      const scanList = document.getElementById('i2c-scan-list');
+
+      try {
+        const res = await fetch('/api/telemetry', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Bad status');
+        const data = await res.json();
+
+        // 1. Update I2C Bus Scanner Readout
+        const devs = data.i2c_devices || [];
+        scanList.innerText = devs.length > 0 ? devs.join(', ') : 'NONE FOUND (Check wiring)';
+        scanList.className = devs.length > 0 ? 'text-[11px] font-bold text-emerald-400' : 'text-[11px] font-bold text-red-400';
+
+        // 2. Update Sensor Status Badges & Hardware Sample Rate
+        const rateBadge = document.getElementById('telem-rate-badge');
+        if (rateBadge && data.imu_hz) {
+          rateBadge.innerText = `IMU ${data.imu_hz}Hz / UI 60FPS`;
+        }
+
+        if (data.imu_ok) {
+          imuBadge.innerText = 'ONLINE';
+          imuBadge.className = 'text-[9px] px-2 py-0.5 rounded font-bold border bg-emerald-950 text-emerald-400 border-emerald-500';
+        } else {
+          imuBadge.innerText = 'NOT FOUND';
+          imuBadge.className = 'text-[9px] px-2 py-0.5 rounded font-bold border bg-red-950 text-red-400 border-red-500';
+        }
+
+        if (data.gps_ok) {
+          gpsBadge.innerText = 'ONLINE';
+          gpsBadge.className = 'text-[9px] px-2 py-0.5 rounded font-bold border bg-emerald-950 text-emerald-400 border-emerald-500';
+        } else {
+          gpsBadge.innerText = 'NOT FOUND';
+          gpsBadge.className = 'text-[9px] px-2 py-0.5 rounded font-bold border bg-red-950 text-red-400 border-red-500';
+        }
+
+        // 3. Update GPS Values
+        const gps = data.gps || {};
+        const fixBadge = document.getElementById('telem-gps-fix');
+        if (fixBadge) {
+          if (gps.fix) {
+            fixBadge.innerText = '3D FIX';
+            fixBadge.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500';
+          } else {
+            fixBadge.innerText = 'NO SATELLITE FIX';
+            fixBadge.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-500';
+          }
+        }
+
+        const elSpeed = document.getElementById('telem-speed');
+        const elSats = document.getElementById('telem-sats');
+        const elHeading = document.getElementById('telem-heading');
+        const elCoords = document.getElementById('telem-coords');
+        if (elSpeed) elSpeed.innerText = (gps.speed_mph || 0).toFixed(1);
+        if (elSats) elSats.innerText = gps.sats || 0;
+        if (elHeading) elHeading.innerText = `${(gps.heading || 0).toFixed(0)}°`;
+        if (elCoords) elCoords.innerText = `${(gps.lat || 0).toFixed(5)}, ${(gps.lon || 0).toFixed(5)}`;
+
+        // 4. Enqueue 100Hz IMU Batch for 60FPS UI Render Loop
+        const imu = data.imu || {};
+        liveImu.gx = Number(imu.gyro_x) || 0;
+        liveImu.gy = Number(imu.gyro_y) || 0;
+        liveImu.gz = Number(imu.gyro_z) || 0;
+
+        if (Array.isArray(data.imu_batch) && data.imu_batch.length > 0) {
+          data.imu_batch.forEach(sample => {
+            if (imuSampleQueue.length < 16) {
+              imuSampleQueue.push(sample);
+            }
+          });
+        } else {
+          liveImu.targetAx = Number(imu.accel_x) || 0;
+          liveImu.targetAy = Number(imu.accel_y) || 0;
+          liveImu.targetAz = Number(imu.accel_z) || 0;
+        }
+
+      } catch (e) {
+        scanList.innerText = 'RP2350 Offline';
+        scanList.className = 'text-[11px] font-bold text-slate-500';
+      } finally {
+        isFetchingTelem = false;
+      }
+    }
+
+    window.onload = async function() {
+      await loadBackendData();
+      updateControlsUI();
+      renderLapCards();
+      timerLoop();
+    };
+  </script>
+</body>
+</html>

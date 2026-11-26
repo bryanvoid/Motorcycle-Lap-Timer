@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>VoidVoyagers // Live Telemetry</title>
+  
+  <style>
+    /* 100% Offline Embedded CSS Engine */
+    :root {
+      --pit-950: #06080c;
+      --pit-900: #0c1017;
+      --pit-850: #121824;
+      --pit-800: #1a2333;
+      --pit-700: #2b3952;
+      --pit-600: #43577d;
+      
+      --racing-purple: #b026ff;
+      --racing-green: #10b981;
+      --racing-amber: #f59e0b;
+      --racing-red: #ef4444;
+      --racing-cyan: #06b6d4;
+
+      --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Impact, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+      --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      overscroll-behavior-y: contain;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      background-color: var(--pit-950);
+      color: #f1f5f9;
+      font-family: var(--font-sans);
+      min-height: 100vh;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      max-width: 32rem;
+      margin-left: auto;
+      margin-right: auto;
+      padding: 0.75rem;
+      gap: 0.75rem;
+    }
+
+    .lcd-display {
+      font-family: var(--font-mono);
+      font-feature-settings: "tnum" 1, "zero" 1;
+      letter-spacing: -0.04em;
+    }
+
+    .gauge-bevel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0.55) 100%), var(--pit-900);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .tactile-btn {
+      transition: transform 0.05s ease, background 0.15s ease, border-color 0.15s ease;
+      cursor: pointer;
+    }
+    .tactile-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* Layout Utilities */
+    .w-full { width: 100%; }
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .flex-1 { flex: 1 1 0%; }
+    .flex-shrink-0 { flex-shrink: 0; }
+    .items-center { align-items: center; }
+    .items-baseline { align-items: baseline; }
+    .justify-between { justify-content: space-between; }
+    .justify-center { justify-content: center; }
+    .grid { display: grid; }
+    .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .hidden { display: none !important; }
+    .relative { position: relative; }
+    .overflow-hidden { overflow: hidden; }
+    .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .text-center { text-align: center; }
+    .text-left { text-align: left; }
+    .uppercase { text-transform: uppercase; }
+
+    /* Spacing */
+    .gap-1 { gap: 0.25rem; }
+    .gap-1\.5 { gap: 0.375rem; }
+    .gap-2 { gap: 0.5rem; }
+    .gap-2\.5 { gap: 0.625rem; }
+    .gap-3 { gap: 0.75rem; }
+    
+    .p-1\.5 { padding: 0.375rem; }
+    .p-2 { padding: 0.5rem; }
+    .p-2\.5 { padding: 0.625rem; }
+    .p-3 { padding: 0.75rem; }
+    .p-4 { padding: 1rem; }
+    
+    .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+    .px-2\.5 { padding-left: 0.625rem; padding-right: 0.625rem; }
+    .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+    .py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+    .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+    .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+    
+    .mb-1 { margin-bottom: 0.25rem; }
+    .mb-2 { margin-bottom: 0.5rem; }
+    .mt-0\.5 { margin-top: 0.125rem; }
+    .mt-1 { margin-top: 0.25rem; }
+
+    /* Dimensions */
+    .w-1\.5 { width: 0.375rem; }
+    .h-1\.5 { height: 0.375rem; }
+    .w-2 { width: 0.5rem; }
+    .h-2 { height: 0.5rem; }
+    .w-4 { width: 1rem; }
+    .h-4 { height: 1rem; }
+
+    /* Borders */
+    .rounded { border-radius: 0.25rem; }
+    .rounded-lg { border-radius: 0.5rem; }
+    .rounded-xl { border-radius: 0.75rem; }
+    .rounded-2xl { border-radius: 1rem; }
+    .rounded-full { border-radius: 9999px; }
+    .border { border-width: 1px; border-style: solid; }
+    .border-b { border-bottom-width: 1px; border-bottom-style: solid; }
+    
+    .border-pit-800 { border-color: var(--pit-800); }
+    .border-pit-700 { border-color: var(--pit-700); }
+    .border-racing-cyan { border-color: var(--racing-cyan); }
+    .border-emerald-500 { border-color: #10b981; }
+    .border-amber-500 { border-color: #f59e0b; }
+    .border-red-500 { border-color: #ef4444; }
+
+    /* Typography */
+    .font-display { font-family: var(--font-display); }
+    .font-mono { font-family: var(--font-mono); }
+    .font-sans { font-family: var(--font-sans); }
+    .text-\[9px\] { font-size: 9px; line-height: 12px; }
+    .text-\[10px\] { font-size: 10px; line-height: 14px; }
+    .text-\[11px\] { font-size: 11px; line-height: 15px; }
+    .text-xs { font-size: 0.75rem; line-height: 1rem; }
+    .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+    .text-base { font-size: 1rem; line-height: 1.5rem; }
+    .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+    .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+    .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+    .text-5xl { font-size: 3rem; line-height: 1; }
+    .font-bold { font-weight: 700; }
+    .font-extrabold { font-weight: 800; }
+    .font-black { font-weight: 900; }
+    .font-semibold { font-weight: 600; }
+    .tracking-wider { letter-spacing: 0.05em; }
+    .tracking-widest { letter-spacing: 0.1em; }
+    .leading-none { line-height: 1; }
+
+    /* Colors */
+    .bg-pit-950 { background-color: var(--pit-950); }
+    .bg-pit-900 { background-color: var(--pit-900); }
+    .bg-pit-850 { background-color: var(--pit-850); }
+    .bg-pit-800 { background-color: var(--pit-800); }
+    .bg-cyan-950 { background-color: #083344; }
+    .bg-emerald-950 { background-color: #064e3b; }
+    .bg-amber-950 { background-color: #451a03; }
+    .bg-purple-950 { background-color: #2e0854; }
+
+    .text-white { color: #ffffff; }
+    .text-slate-200 { color: #e2e8f0; }
+    .text-slate-300 { color: #cbd5e1; }
+    .text-slate-400 { color: #94a3b8; }
+    .text-slate-500 { color: #64748b; }
+    .text-racing-cyan { color: var(--racing-cyan); }
+    .text-racing-purple { color: var(--racing-purple); }
+    .text-racing-green { color: var(--racing-green); }
+    .text-emerald-400 { color: #34d399; }
+    .text-amber-400 { color: #fbbf24; }
+    .text-purple-400 { color: #c084fc; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+    /* Custom Canvas Canvases */
+    canvas {
+      display: block;
+      width: 100%;
+      background-color: #080b11;
+      border-radius: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="w-full flex items-center justify-between pb-1">
+    <div class="flex items-center gap-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-racing-cyan animate-pulse"></span>
+      <h1 class="font-display font-extrabold text-base tracking-wider text-white">
+        VOID<span class="text-racing-cyan">TELEM</span>
+      </h1>
+      <div id="telem-status-pill" class="text-[9px] font-mono px-2 py-0.5 rounded bg-pit-850 text-slate-400 border border-pit-700 flex items-center gap-1.5">
+        <span id="telem-status-dot" class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+        <span id="telem-status-text">CONNECTING</span>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-1.5">
+      <!-- Speed Unit Toggle (MPH / KM/H) -->
+      <button id="btn-unit-toggle" class="px-2 py-1.5 rounded-xl bg-pit-850 border border-pit-700 text-xs font-mono font-bold text-slate-300 tactile-btn" title="Toggle Speed Unit">
+        <span id="label-unit">MPH</span>
+      </button>
+
+      <!-- Return to Timer Link -->
+      <a href="/" class="p-2 px-3 rounded-xl bg-pit-850 hover:bg-pit-800 border border-emerald-500 text-emerald-400 tactile-btn flex items-center gap-1.5" style="text-decoration:none;" title="Back to Lap Timer">
+        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span class="text-[10px] font-mono font-bold tracking-wider text-emerald-400">TIMER</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- Hardware Sensors Status Box -->
+  <section class="gauge-bevel rounded-2xl p-3 border border-pit-800 flex flex-col gap-2">
+    <div class="flex items-center justify-between border-b border-pit-800 pb-1.5">
+      <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">HARDWARE SENSORS (I2C0)</span>
+      <span class="text-[9px] font-mono text-slate-500">GP4 (SDA) • GP5 (SCL)</span>
+    </div>
+    <div class="grid grid-cols-2 gap-2 text-xs font-mono">
+      <!-- IMU Status -->
+      <div class="bg-pit-900 p-2.5 rounded-xl border border-pit-800 flex items-center justify-between">
+        <div>
+          <div class="text-[9px] text-slate-500">IMU (0x6A)</div>
+          <div class="text-[11px] font-bold text-slate-200">ISM330DHCX</div>
+        </div>
+        <span id="status-imu-badge" class="text-[9px] px-2 py-0.5 rounded font-bold border bg-pit-850 text-slate-500 border-pit-700">WAITING</span>
+      </div>
+      <!-- GPS Status -->
+      <div class="bg-pit-900 p-2.5 rounded-xl border border-pit-800 flex items-center justify-between">
+        <div>
+          <div class="text-[9px] text-slate-500">GPS (0x10)</div>
+          <div class="text-[11px] font-bold text-slate-200">PA1010D</div>
+        </div>
+        <span id="status-gps-badge" class="text-[9px] px-2 py-0.5 rounded font-bold border bg-pit-850 text-slate-500 border-pit-700">WAITING</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 1: Main Speed & GPS Header Gauge -->
+  <section class="gauge-bevel rounded-2xl p-4 border border-pit-800 flex flex-col gap-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-1.5">
+        <span class="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">GPS VELOCITY</span>
+        <span id="gps-fix-badge" class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-pit-850 text-slate-500 border border-pit-700">NO FIX</span>
+      </div>
+      <div class="text-[10px] font-mono text-slate-400 flex items-center gap-2">
+        <span id="gps-sats-count">0 SATS</span>
+        <span>•</span>
+        <span id="gps-alt">0 m ALT</span>
+      </div>
+    </div>
+
+    <!-- Massive Speed Readout -->
+    <div class="flex items-baseline justify-center gap-2 py-1">
+      <span class="lcd-display text-5xl font-black text-white" id="val-speed">0.0</span>
+      <span class="text-sm font-display font-bold text-racing-cyan" id="val-speed-unit">MPH</span>
+    </div>
+
+    <!-- Quick Telemetry Tickers: Heading, Lat/Lon -->
+    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-pit-800 text-xs font-mono">
+      <div class="bg-pit-900 p-2 rounded-xl border border-pit-800 flex justify-between items-center">
+        <span class="text-slate-500 text-[10px]">HEADING</span>
+        <span class="text-slate-200 font-bold" id="val-heading">0.0° N</span>
+      </div>
+      <div class="bg-pit-900 p-2 rounded-xl border border-pit-800 flex justify-between items-center">
+        <span class="text-slate-500 text-[10px]">COORDS</span>
+        <span class="text-slate-200 text-[10px] truncate" id="val-coords">-- , --</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: G-G Friction Circle Diagram -->
+  <section class="gauge-bevel rounded-2xl p-4 border border-pit-800 flex flex-col gap-2.5">
+    <div class="flex items-center justify-between">
+      <div>
+        <div class="text-xs font-display font-bold text-white uppercase tracking-wider">G-G FRICTION CIRCLE</div>
+        <div class="text-[10px] font-mono text-slate-400">ISM330DHCX Accel (Lateral vs Longitudinal)</div>
+      </div>
+      <button id="btn-reset-peaks" class="text-[9px] font-mono px-2 py-1 rounded bg-pit-850 text-slate-400 border border-pit-700 tactile-btn" title="Reset Peak G-Forces">
+        RESET PEAKS
+      </button>
+    </div>
+
+    <div class="flex flex-col items-center justify-center my-1">
+      <!-- 2D Canvas for G-G Plot -->
+      <canvas id="canvas-friction-circle" width="280" height="280" style="max-width: 280px; height: 280px;"></canvas>
+    </div>
+
+    <!-- G-Force Peak & Instant Metrics -->
+    <div class="grid grid-cols-4 gap-1.5 text-center font-mono">
+      <div class="bg-pit-900 p-1.5 rounded-xl border border-pit-800">
+        <div class="text-[8px] text-amber-400 font-bold">BRAKE (Y+)</div>
+        <div class="text-xs font-bold text-white mt-0.5" id="val-peak-brake">0.00G</div>
+      </div>
+      <div class="bg-pit-900 p-1.5 rounded-xl border border-pit-800">
+        <div class="text-[8px] text-emerald-400 font-bold">ACCEL (Y-)</div>
+        <div class="text-xs font-bold text-white mt-0.5" id="val-peak-accel">0.00G</div>
+      </div>
+      <div class="bg-pit-900 p-1.5 rounded-xl border border-pit-800">
+        <div class="text-[8px] text-racing-cyan font-bold">LEFT (X-)</div>
+        <div class="text-xs font-bold text-white mt-0.5" id="val-peak-left">0.00G</div>
+      </div>
+      <div class="bg-pit-900 p-1.5 rounded-xl border border-pit-800">
+        <div class="text-[8px] text-racing-purple font-bold">RIGHT (X+)</div>
+        <div class="text-xs font-bold text-white mt-0.5" id="val-peak-right">0.00G</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: Rolling Strip Chart (Live G-Force History) -->
+  <section class="gauge-bevel rounded-2xl p-4 border border-pit-800 flex flex-col gap-2">
+    <div class="flex items-center justify-between">
+      <div class="text-xs font-display font-bold text-white uppercase tracking-wider">LIVE FORCE HISTORY</div>
+      <div class="flex items-center gap-3 text-[10px] font-mono">
+        <span class="text-racing-cyan flex items-center gap-1"><span class="w-2 h-0.5 bg-racing-cyan"></span> Lat G</span>
+        <span class="text-amber-400 flex items-center gap-1"><span class="w-2 h-0.5 bg-amber-400"></span> Long G</span>
+      </div>
+    </div>
+
+    <canvas id="canvas-history-strip" width="460" height="120" style="height: 120px;"></canvas>
+  </section>
+
+  <!-- Section 4: Tri-Axial IMU & Gyro Matrix -->
+  <section class="gauge-bevel rounded-2xl p-3 border border-pit-800 flex flex-col gap-2">
+    <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider font-semibold border-b border-pit-800 pb-1.5">
+      RAW 6-DOF INERTIAL MEASUREMENT
+    </div>
+
+    <div class="grid grid-cols-3 gap-2 text-center font-mono">
+      <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+        <div class="text-[9px] text-slate-500 uppercase">LATERAL (X)</div>
+        <div class="text-sm font-bold text-racing-cyan mt-0.5" id="imu-accel-x">+0.00 G</div>
+      </div>
+      <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+        <div class="text-[9px] text-slate-500 uppercase">LONGITUDINAL (Y)</div>
+        <div class="text-sm font-bold text-amber-400 mt-0.5" id="imu-accel-y">+0.00 G</div>
+      </div>
+      <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+        <div class="text-[9px] text-slate-500 uppercase">VERTICAL (Z)</div>
+        <div class="text-sm font-bold text-slate-200 mt-0.5" id="imu-accel-z">+1.00 G</div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-3 gap-2 text-center font-mono">
+      <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+        <div class="text-[9px] text-slate-500 uppercase">ROLL RATE</div>
+        <div class="text-xs font-bold text-slate-300 mt-0.5" id="imu-gyro-x">0.0 °/s</div>
+      </div>
+      <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+        <div class="text-[9px] text-slate-500 uppercase">PITCH RATE</div>
+        <div class="text-xs font-bold text-slate-300 mt-0.5" id="imu-gyro-y">0.0 °/s</div>
+      </div>
+      <div class="bg-pit-900 p-2 rounded-xl border border-pit-800">
+        <div class="text-[9px] text-purple-400 font-bold uppercase">YAW (ROTATION)</div>
+        <div class="text-xs font-bold text-white mt-0.5" id="imu-gyro-z">0.0 °/s</div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // System State
+    const state = {
+      isMph: true,
+      isLinked: false,
+      peaks: {
+        brake: 0,
+        accel: 0,
+        left: 0,
+        right: 0
+      },
+      // Ring buffer of G-G points for trail drawing
+      frictionTrail: [],
+      maxTrail: 30,
+      // Strip chart rolling history
+      history: {
+        latG: new Array(50).fill(0),
+        longG: new Array(50).fill(0)
+      }
+    };
+
+    // Canvas References
+    const frictionCanvas = document.getElementById('canvas-friction-circle');
+    const fCtx = frictionCanvas.getContext('2d');
+
+    const stripCanvas = document.getElementById('canvas-history-strip');
+    const sCtx = stripCanvas.getContext('2d');
+
+    // Unit toggle
+    const btnUnit = document.getElementById('btn-unit-toggle');
+    const labelUnit = document.getElementById('label-unit');
+    const valSpeedUnit = document.getElementById('val-speed-unit');
+
+    btnUnit.addEventListener('click', () => {
+      state.isMph = !state.isMph;
+      const unit = state.isMph ? 'MPH' : 'KM/H';
+      labelUnit.innerText = unit;
+      valSpeedUnit.innerText = unit;
+    });
+
+    // Reset peak Gs
+    document.getElementById('btn-reset-peaks').addEventListener('click', () => {
+      state.peaks = { brake: 0, accel: 0, left: 0, right: 0 };
+      updatePeakLabels();
+    });
+
+    function updatePeakLabels() {
+      document.getElementById('val-peak-brake').innerText = `${state.peaks.brake.toFixed(2)}G`;
+      document.getElementById('val-peak-accel').innerText = `${state.peaks.accel.toFixed(2)}G`;
+      document.getElementById('val-peak-left').innerText  = `${state.peaks.left.toFixed(2)}G`;
+      document.getElementById('val-peak-right').innerText = `${state.peaks.right.toFixed(2)}G`;
+    }
+
+    // --- Render G-G Friction Circle ---
+    function drawFrictionCircle(curX, curY) {
+      const w = frictionCanvas.width;
+      const h = frictionCanvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const maxG = 1.6; // Max G scale of the circle
+      const radius = (w / 2) - 18;
+
+      fCtx.clearRect(0, 0, w, h);
+
+      // Background grid circles
+      const rings = [0.5, 1.0, 1.5];
+      rings.forEach(g => {
+        const r = (g / maxG) * radius;
+        fCtx.beginPath();
+        fCtx.arc(cx, cy, r, 0, Math.PI * 2);
+        fCtx.strokeStyle = g === 1.0 ? '#2b3952' : '#141c2b';
+        fCtx.lineWidth = g === 1.0 ? 1.5 : 1;
+        if (g === 1.5) {
+          fCtx.setLineDash([4, 4]);
+          fCtx.strokeStyle = 'rgba(239, 68, 68, 0.35)'; // Red border warning ring
+        } else {
+          fCtx.setLineDash([]);
+        }
+        fCtx.stroke();
+
+        // Label
+        fCtx.fillStyle = '#475569';
+        fCtx.font = '9px monospace';
+        fCtx.fillText(`${g}G`, cx + 4, cy - r + 10);
+      });
+      fCtx.setLineDash([]);
+
+      // Crosshairs
+      fCtx.beginPath();
+      fCtx.moveTo(cx, 10); fCtx.lineTo(cx, h - 10);
+      fCtx.moveTo(10, cy); fCtx.lineTo(w - 10, cy);
+      fCtx.strokeStyle = '#1e293b';
+      fCtx.lineWidth = 1;
+      fCtx.stroke();
+
+      // Axis direction labels
+      fCtx.fillStyle = '#64748b';
+      fCtx.font = '9px monospace';
+      fCtx.textAlign = 'center';
+      fCtx.fillText('BRAKE', cx, 14);
+      fCtx.fillText('ACCEL', cx, h - 6);
+      fCtx.textAlign = 'left';
+      fCtx.fillText('LEFT', 8, cy - 4);
+      fCtx.textAlign = 'right';
+      fCtx.fillText('RIGHT', w - 8, cy - 4);
+
+      // Draw historical fading trail
+      state.frictionTrail.forEach((pt, idx) => {
+        const alpha = (idx + 1) / state.frictionTrail.length;
+        const px = cx + (pt.x / maxG) * radius;
+        const py = cy - (pt.y / maxG) * radius; // Invert Y so Brake (Y+) is UP
+
+        fCtx.beginPath();
+        fCtx.arc(px, py, 2.5, 0, Math.PI * 2);
+        fCtx.fillStyle = `rgba(6, 182, 212, ${alpha * 0.4})`;
+        fCtx.fill();
+      });
+
+      // Current Live Point
+      const curPx = cx + (curX / maxG) * radius;
+      const curPy = cy - (curY / maxG) * radius;
+
+      // Glow halo
+      const grad = fCtx.createRadialGradient(curPx, curPy, 2, curPx, curPy, 14);
+      grad.addColorStop(0, 'rgba(6, 182, 212, 0.9)');
+      grad.addColorStop(0.5, 'rgba(6, 182, 212, 0.3)');
+      grad.addColorStop(1, 'rgba(6, 182, 212, 0)');
+      fCtx.beginPath();
+      fCtx.arc(curPx, curPy, 14, 0, Math.PI * 2);
+      fCtx.fillStyle = grad;
+      fCtx.fill();
+
+      // Center point
+      fCtx.beginPath();
+      fCtx.arc(curPx, curPy, 4.5, 0, Math.PI * 2);
+      fCtx.fillStyle = '#ffffff';
+      fCtx.fill();
+      fCtx.strokeStyle = '#06b6d4';
+      fCtx.lineWidth = 2;
+      fCtx.stroke();
+    }
+
+    // --- Render Rolling Strip Chart ---
+    function drawStripChart() {
+      const w = stripCanvas.width;
+      const h = stripCanvas.height;
+      const cy = h / 2;
+
+      sCtx.clearRect(0, 0, w, h);
+
+      // Zero line
+      sCtx.beginPath();
+      sCtx.moveTo(0, cy);
+      sCtx.lineTo(w, cy);
+      sCtx.strokeStyle = '#1e293b';
+      sCtx.lineWidth = 1;
+      sCtx.stroke();
+
+      // +1G and -1G reference lines
+      const scaleY = (h / 2) * 0.65; // Scale: 1.5G fills half canvas
+      sCtx.strokeStyle = '#141c2b';
+      sCtx.setLineDash([3, 3]);
+      sCtx.beginPath();
+      sCtx.moveTo(0, cy - scaleY); sCtx.lineTo(w, cy - scaleY);
+      sCtx.moveTo(0, cy + scaleY); sCtx.lineTo(w, cy + scaleY);
+      sCtx.stroke();
+      sCtx.setLineDash([]);
+
+      const pts = state.history.latG.length;
+      const stepX = w / (pts - 1);
+
+      // Plot Lateral G (Cyan)
+      sCtx.beginPath();
+      sCtx.strokeStyle = '#06b6d4';
+      sCtx.lineWidth = 2;
+      state.history.latG.forEach((val, i) => {
+        const x = i * stepX;
+        const y = cy - (val / 1.5) * scaleY;
+        if (i === 0) sCtx.moveTo(x, y);
+        else sCtx.lineTo(x, y);
+      });
+      sCtx.stroke();
+
+      // Plot Longitudinal G (Amber)
+      sCtx.beginPath();
+      sCtx.strokeStyle = '#f59e0b';
+      sCtx.lineWidth = 2;
+      state.history.longG.forEach((val, i) => {
+        const x = i * stepX;
+        const y = cy - (val / 1.5) * scaleY;
+        if (i === 0) sCtx.moveTo(x, y);
+        else sCtx.lineTo(x, y);
+      });
+      sCtx.stroke();
+    }
+
+    // --- Format Helper for Degrees Heading ---
+    function formatHeading(deg) {
+      if (deg === null || isNaN(deg)) return '0.0° N';
+      const cardinals = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const idx = Math.round(deg / 45) % 8;
+      return `${deg.toFixed(1)}° ${cardinals[idx]}`;
+    }
+
+    // --- Fetch Telemetry Loop ---
+    async function fetchTelemetry() {
+      const dot = document.getElementById('telem-status-dot');
+      const text = document.getElementById('telem-status-text');
+      const pill = document.getElementById('telem-status-pill');
+      const imuBadge = document.getElementById('status-imu-badge');
+      const gpsBadge = document.getElementById('status-gps-badge');
+
+      try {
+        const res = await fetch('/api/telemetry', { cache: 'no-store' });
+        if (!res.ok) throw new Error('Bad response');
+        const data = await res.json();
+
+        if (!state.isLinked) {
+          state.isLinked = true;
+          dot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
+          text.innerText = 'RP2350 LIVE';
+          text.className = 'text-emerald-400 font-bold';
+          pill.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500 flex items-center gap-1.5';
+        }
+
+        // Live Sensor Diagnostic Badges
+        const sensors = data.sensors || {};
+        const imuOk = sensors.imu_connected !== false && (data.imu && (data.imu.accel_z !== 0 || data.imu.accel_x !== 0 || data.imu.accel_y !== 0));
+        const gpsOk = sensors.gps_connected !== false;
+
+        if (imuBadge) {
+          if (imuOk) {
+            imuBadge.innerText = 'ONLINE';
+            imuBadge.className = 'text-[9px] px-2 py-0.5 rounded font-bold border bg-emerald-950 text-emerald-400 border-emerald-500';
+          } else {
+            imuBadge.innerText = 'DISCONNECTED';
+            imuBadge.className = 'text-[9px] px-2 py-0.5 rounded font-bold border bg-red-950 text-red-400 border-red-500';
+          }
+        }
+
+        if (gpsBadge) {
+          if (gpsOk) {
+            const hasFix = data.gps && data.gps.fix;
+            gpsBadge.innerText = hasFix ? 'ONLINE (FIX)' : 'ONLINE (NO FIX)';
+            gpsBadge.className = hasFix 
+              ? 'text-[9px] px-2 py-0.5 rounded font-bold border bg-emerald-950 text-emerald-400 border-emerald-500'
+              : 'text-[9px] px-2 py-0.5 rounded font-bold border bg-amber-950 text-amber-400 border-amber-500';
+          } else {
+            gpsBadge.innerText = 'DISCONNECTED';
+            gpsBadge.className = 'text-[9px] px-2 py-0.5 rounded font-bold border bg-red-950 text-red-400 border-red-500';
+          }
+        }
+
+        renderTelemetry(data);
+      } catch (err) {
+        // Disconnected - show real offline state with zero fake data
+        state.isLinked = false;
+        dot.className = 'w-1.5 h-1.5 rounded-full bg-red-500';
+        text.innerText = 'OFFLINE';
+        text.className = 'text-red-400';
+        pill.className = 'text-[9px] font-mono px-2 py-0.5 rounded bg-red-950 text-red-400 border border-red-500 flex items-center gap-1.5';
+
+        if (imuBadge) {
+          imuBadge.innerText = 'OFFLINE';
+          imuBadge.className = 'text-[9px] px-2 py-0.5 rounded font-bold border bg-pit-850 text-slate-500 border-pit-700';
+        }
+        if (gpsBadge) {
+          gpsBadge.innerText = 'OFFLINE';
+          gpsBadge.className = 'text-[9px] px-2 py-0.5 rounded font-bold border bg-pit-850 text-slate-500 border-pit-700';
+        }
+      }
+    }
+
+    function renderTelemetry(data) {
+      const gps = data.gps || {};
+      const imu = data.imu || {};
+
+      // 1. GPS Readings
+      const speed = state.isMph ? (gps.speed_mph || 0) : (gps.speed_kmh || 0);
+      document.getElementById('val-speed').innerText = speed.toFixed(1);
+
+      const fixBadge = document.getElementById('gps-fix-badge');
+      if (gps.fix) {
+        fixBadge.innerText = '3D FIX';
+        fixBadge.className = 'text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500';
+      } else {
+        fixBadge.innerText = 'NO FIX';
+        fixBadge.className = 'text-[9px] font-mono px-1.5 py-0.5 rounded bg-pit-850 text-slate-500 border border-pit-700';
+      }
+
+      document.getElementById('gps-sats-count').innerText = `${gps.sats || 0} SATS`;
+      document.getElementById('gps-alt').innerText = `${Math.round(gps.alt_m || 0)} m ALT`;
+      document.getElementById('val-heading').innerText = formatHeading(gps.heading);
+      document.getElementById('val-coords').innerText = gps.fix ? `${gps.lat.toFixed(4)}, ${gps.lon.toFixed(4)}` : '-- , --';
+
+      // 2. IMU Readings
+      const ax = imu.accel_x || 0; // Lateral G
+      const ay = imu.accel_y || 0; // Longitudinal G
+      const az = imu.accel_z || 0; // Vertical G
+
+      document.getElementById('imu-accel-x').innerText = `${ax >= 0 ? '+' : ''}${ax.toFixed(2)} G`;
+      document.getElementById('imu-accel-y').innerText = `${ay >= 0 ? '+' : ''}${ay.toFixed(2)} G`;
+      document.getElementById('imu-accel-z').innerText = `${az >= 0 ? '+' : ''}${az.toFixed(2)} G`;
+
+      document.getElementById('imu-gyro-x').innerText = `${(imu.gyro_x || 0).toFixed(1)} °/s`;
+      document.getElementById('imu-gyro-y').innerText = `${(imu.gyro_y || 0).toFixed(1)} °/s`;
+      document.getElementById('imu-gyro-z').innerText = `${(imu.gyro_z || 0).toFixed(1)} °/s`;
+
+      // Update Peak Tracking
+      if (ay > state.peaks.brake) state.peaks.brake = ay;
+      if (ay < -state.peaks.accel) state.peaks.accel = Math.abs(ay);
+      if (ax < -state.peaks.left)  state.peaks.left  = Math.abs(ax);
+      if (ax > state.peaks.right) state.peaks.right = ax;
+      updatePeakLabels();
+
+      // Update G-G Trail Buffer
+      state.frictionTrail.push({ x: ax, y: ay });
+      if (state.frictionTrail.length > state.maxTrail) state.frictionTrail.shift();
+      drawFrictionCircle(ax, ay);
+
+      // Update History Strip
+      state.history.latG.push(ax);
+      state.history.latG.shift();
+      state.history.longG.push(ay);
+      state.history.longG.shift();
+      drawStripChart();
+    }
+
+    // Poll at 10 Hz (every 100ms) for high-responsiveness
+    setInterval(fetchTelemetry, 100);
+
+    // Initial canvas setup
+    window.onload = function() {
+      drawFrictionCircle(0, 0);
+      drawStripChart();
+      fetchTelemetry();
+    };
+  </script>
+</body>
+</html>
